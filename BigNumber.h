@@ -11,7 +11,7 @@
 // if you do not plan to implement bonus, you can delete those lines
 // or just keep them as is and do not define the macro to 1
 #define SUPPORT_IFSTREAM 0
-#define SUPPORT_ISQRT 0
+#define SUPPORT_ISQRT 1
 #define SUPPORT_EVAL 0 // special bonus
 
 #define MAXDIGITS 9
@@ -363,7 +363,34 @@ public:
     }
 
 #if SUPPORT_ISQRT
-    BigInteger isqrt() const;
+    BigInteger isqrt() const {
+        if (*this < 0)
+            throw std::runtime_error("Cannot calculate SQRT of negative number");
+
+        if (isZero(*this) || (numbers.size() == 1 && numbers[0] == 1))
+            return *this;
+
+
+
+        BigInteger num = *this;
+        BigInteger x0 = num / 2;
+
+        while (true) {
+            BigInteger x1 = (x0 + num / x0) / 2;
+
+            if (x1 == x0 || x1 == x0 + 1 || x1 == x0 - 1) {
+                break;
+            }
+
+            x0 = x1;
+        }
+
+        //fixed floor
+        if (x0 * x0 > *this)
+            x0 -= 1;
+
+        return x0;
+    }
 #endif
 
 private:
@@ -613,7 +640,18 @@ public:
         return std::sqrt((convertToDouble(numerator) / convertToDouble(denominator)));
     }
 #if SUPPORT_ISQRT
-    BigInteger isqrt() const;
+    BigInteger isqrt() const {
+        if (isNegative)
+            throw std::runtime_error("Cannot calculate SQRT of negative number");
+        
+        if (isZero(this->numerator))
+            return this->numerator;
+        
+        BigInteger result = this->numerator / this->denominator;
+
+        return result.isqrt();
+    }
+
 #endif
 
 private:
