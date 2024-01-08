@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <limits>
 #include <cmath>
+#include <cctype>
+#include <exception>
 
 // if you do not plan to implement bonus, you can delete those lines
 // or just keep them as is and do not define the macro to 1
@@ -48,11 +50,11 @@ public:
     explicit BigInteger(const std::string& str) {
 
         if (str.empty())
-            throw std::runtime_error("empty string");
+            throw std::runtime_error("Invalid string");
         
 
         if (std::isspace(str.front()) || std::isspace(str.back()))
-            throw std::runtime_error("white space in string");
+            throw std::runtime_error("Invalid string");
         
 
         bool hasSign = false;
@@ -65,6 +67,22 @@ public:
             hasSign = true;
         }
 
+        size_t i = 0;
+        if (hasSign)
+        {
+            if (str.size() == 1)
+            {
+                throw std::runtime_error("Invalid string");
+            }
+
+            i = 1;
+        }
+        for (i; i < str.size(); i++)
+        {
+            if (!isdigit(str[i])) {
+                throw std::runtime_error("Invalid string");
+            }
+        }
 
 
         for (int64_t i = str.size(); i >= 0; i -= MAXDIGITS) {
@@ -73,9 +91,10 @@ public:
 
             if (i <= MAXDIGITS) {
                 temp = str.substr(0, i);
-                
                 if (hasSign) {
-                    temp.erase(temp.begin());
+
+                    if (temp.size())
+                        temp.erase(temp.begin());
                 }
             }
             else {
@@ -119,6 +138,15 @@ public:
 
     // binary arithmetics operators
     BigInteger& operator+=(const BigInteger& rhs) {
+        if (isZero(rhs))
+            return *this;
+        
+        if (isZero(*this))
+        {
+            *this = rhs;
+            return *this;
+        }
+
         if (isNegative != rhs.isNegative)
             return *this -= -rhs;
 
@@ -152,6 +180,18 @@ public:
     }
 
     BigInteger& operator-=(const BigInteger& rhs) {
+        if (isZero(rhs))
+            return *this;
+
+        if (isZero(*this))
+        {
+            *this = rhs;
+            isNegative = !isNegative;
+            return *this;
+        }
+
+
+
         if (isNegative != rhs.isNegative)
             return *this += -rhs;
 
@@ -330,6 +370,7 @@ private:
     bool isNegative = false;
     std::vector<uint64_t> numbers;
 
+
     friend inline BigInteger operator+(BigInteger lhs, const BigInteger& rhs);
     friend inline BigInteger operator-(BigInteger lhs, const BigInteger& rhs);
     friend inline BigInteger operator*(BigInteger lhs, const BigInteger& rhs);
@@ -371,7 +412,7 @@ inline bool operator<(const BigInteger& lhs, const BigInteger& rhs) {
     if (lhs.numbers.size() != rhs.numbers.size())
         return (lhs.numbers.size() < rhs.numbers.size()) != lhs.isNegative;
 
-    for (std::size_t i = lhs.numbers.size(); i-- > 0;) {
+    for (size_t i = lhs.numbers.size(); i-- > 0;) {
         if (lhs.numbers[i] != rhs.numbers[i])
             return (lhs.numbers[i] < rhs.numbers[i]) != lhs.isNegative;
     }
@@ -510,6 +551,9 @@ public:
     
     // binary arithmetics operators
     BigRational& operator+=(const BigRational& rhs) {
+        if (isNegative != rhs.isNegative)
+            return *this -= -rhs;
+
         numerator = (numerator * rhs.denominator) + (rhs.numerator * denominator);
         denominator *= rhs.denominator;
 
@@ -518,6 +562,17 @@ public:
     }
 
     BigRational& operator-=(const BigRational& rhs) {
+        if (isNegative != rhs.isNegative)
+            return *this += -rhs;
+
+        if ((!isNegative && *this < rhs) || (isNegative && *this > rhs)) {
+            *this = rhs - *this;
+            isNegative = !isNegative;
+
+            simplify(*this);
+            return *this;
+        }
+
         numerator = (numerator * rhs.denominator) - (rhs.numerator * denominator);
         denominator *= rhs.denominator;
 
@@ -609,14 +664,16 @@ inline bool operator<(const BigRational& lhs, const BigRational& rhs) {
     if (lhs.isNegative != rhs.isNegative)
         return lhs.isNegative;
 
+    bool result = lhs.isNegative ? rhs.numerator < lhs.numerator : lhs.numerator < rhs.numerator;
+
     if (lhs.denominator != rhs.denominator)
     {
         BigInteger a = lhs.numerator * rhs.denominator;
         BigInteger b = rhs.numerator * lhs.denominator;
-        return a < b;
+        result = lhs.isNegative ? b < a : a < b;
     }
 
-    return lhs.numerator < rhs.numerator;
+    return result;
 }
 inline bool operator>(const BigRational& lhs, const BigRational& rhs) { return rhs < lhs; }
 inline bool operator<=(const BigRational& lhs, const BigRational& rhs) { return !(lhs > rhs); }
@@ -637,6 +694,11 @@ inline std::ostream& operator<<(std::ostream& os, const BigRational& rhs) {
 }
 
 void simplify(BigRational& fraction) {
+    if (isZero(fraction.denominator))
+    {
+        throw std::runtime_error("Zero denominator");
+    }
+
     if (isZero(fraction.numerator))
     {
         fraction.denominator = 1;
