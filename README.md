@@ -12,6 +12,6 @@ Supported operators
 1. unary `+ -`
 2. binary `+ - * / %(only for BigInteger)`
 3. relational `== != < > <= >=`
-4. sqrt (with lost precision)
-5. isqrt (floor sqrt without loosing precision)
+4. `sqrt()` (with lost precision)
+5. `isqrt()` (floor sqrt without loosing precision)
 6. output stream `<<`
