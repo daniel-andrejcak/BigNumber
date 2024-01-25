@@ -1,3 +1,17 @@
-C++ classes for arbitrary precision integers and fractions
+# C++ header with types for arbitrary precision integers and fractions
 
-with support for unary, binary, relational operators and sqrt function
+`BigInteger` 
+- type for arbitrary precision int
+- represented as `std::vector` of 9 digit long `uint64_t`
+
+`BigRational`
+- type for arbitrary precision fractions
+- represented as 2 `BigInteger` (numerator and denominator)
+
+Supported operators
+1. unary `+ -`
+2. binary `+ - * / %(only for BigInteger)`
+3. relational `== != < > <= >=`
+4. sqrt (with lost precision)
+5. isqrt (floor sqrt without loosing precision)
+6. output stream `<<`
